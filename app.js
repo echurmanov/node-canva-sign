@@ -22,7 +22,7 @@ io.on('connection', function(socket){
 });
 
 http.listen(8085, function(){
-    console.log('listening on *:3000');
+    console.log('listening on *:8085');
 });
 
 io.on('connection', function(socket){

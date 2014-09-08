@@ -11,74 +11,79 @@
                 window.location.href="/image?i=" + imageIndex
             });
 
-            var flag = false;
             var canvas = document.getElementById("canvas");
             document.getElementById("clear").addEventListener("click", erase);
             document.getElementById("save").addEventListener("click", save);
-
             var ctx = canvas.getContext("2d");
-            var w = canvas.width;
-            var h = canvas.height;
-            var currX = 0;
-            var currY = 0;
 
-            canvas.addEventListener("mousemove", function (e) {
-                findxy('move', e)
-            }, false);
-            canvas.addEventListener("touchmove", function (e) {
-                findxy('move', e)
-            }, false);
-            canvas.addEventListener("mousedown", function (e) {
-                findxy('down', e)
-            }, false);
-            canvas.addEventListener("touchstart", function (e) {
-                findxy('down', e)
-            }, false);
-            canvas.addEventListener("mouseup", function (e) {
-                findxy('up', e)
-            }, false);
-            canvas.addEventListener("touchend", function (e) {
-                findxy('up', e)
-            }, false);
-            canvas.addEventListener("mouseout", function (e) {
-                findxy('out', e)
-            }, false);
-            canvas.addEventListener("touchcancel", function (e) {
-                findxy('out', e)
-            }, false);
+            ctx.strokeStyle="black";
+            ctx.lineWidth = "2";
 
-            function draw() {
-                ctx.beginPath();
-                ctx.moveTo(prevX, prevY);
-                ctx.lineTo(currX, currY);
-                ctx.strokeStyle = "black";
-                ctx.lineWidth = "2";
-                ctx.stroke();
-                ctx.closePath();
-            }
+            // prototype to	start drawing on touch using canvas moveTo and lineTo
+            var drawTouch = function() {
+                var start = function(e) {
+                    ctx.beginPath();
+                    x = e.changedTouches[0].pageX - canvas.offsetLeft;
+                    y = e.changedTouches[0].pageY - canvas.offsetTop;
+                    ctx.moveTo(x,y);
+                };
+                var move = function(e) {
+                    e.preventDefault();
+                    x = e.changedTouches[0].pageX - canvas.offsetLeft;
+                    y = e.changedTouches[0].pageY - canvas.offsetTop;
+                    ctx.lineTo(x,y);
+                    ctx.stroke();
+                };
+                document.getElementById("canvas").addEventListener("touchstart", start, false);
+                document.getElementById("canvas").addEventListener("touchmove", move, false);
+            };
 
-            function findxy(res, e) {
-                if (res == 'down') {
-                    prevX = currX;
-                    prevY = currY;
-                    currX = e.clientX - canvas.offsetLeft;
-                    currY = e.clientY - canvas.offsetTop;
+// prototype to	start drawing on pointer(microsoft ie) using canvas moveTo and lineTo
+            var drawPointer = function() {
+                var start = function(e) {
+                    e = e.originalEvent;
+                    ctx.beginPath();
+                    x = e.pageX - canvas.offsetLeft;
+                    y = e.pageY - canvas.offsetTop;
+                    ctx.moveTo(x,y);
+                };
+                var move = function(e) {
+                    e.preventDefault();
+                    e = e.originalEvent;
+                    x = e.pageX - canvas.offsetLeft;
+                    y = e.pageY - canvas.offsetTop;
+                    ctx.lineTo(x,y);
+                    ctx.stroke();
+                };
+                document.getElementById("canvas").addEventListener("MSPointerDown", start, false);
+                document.getElementById("canvas").addEventListener("MSPointerMove", move, false);
+            };
 
-                    flag = true;
-                }
-                if (res == 'up' || res == "out") {
-                    flag = false;
-                }
-                if (res == 'move') {
-                    if (flag) {
-                        prevX = currX;
-                        prevY = currY;
-                        currX = e.clientX - canvas.offsetLeft;
-                        currY = e.clientY - canvas.offsetTop;
-                        draw();
+// prototype to	start drawing on mouse using canvas moveTo and lineTo
+            var drawMouse = function() {
+                var clicked = 0;
+                var start = function(e) {
+                    clicked = 1;
+                    ctx.beginPath();
+                    x = e.pageX - canvas.offsetLeft;
+                    y = e.pageY - canvas.offsetTop;
+                    ctx.moveTo(x,y);
+                };
+                var move = function(e) {
+                    if(clicked){
+                        x = e.pageX - canvas.offsetLeft;
+                        y = e.pageY - canvas.offsetTop;
+                        ctx.lineTo(x,y);
+                        ctx.stroke();
                     }
-                }
-            }
+                };
+                var stop = function(e) {
+                    clicked = 0;
+                };
+                document.getElementById("canvas").addEventListener("mousedown", start, false);
+                document.getElementById("canvas").addEventListener("mousemove", move, false);
+                document.addEventListener("mouseup", stop, false);
+            };
 
             function erase() {
                 ctx.clearRect(0, 0, w, h);
@@ -87,6 +92,10 @@
             function save() {
                 socket.emit("save image", canvas.toDataURL("image/png"));
             }
+
+            drawTouch();
+            drawPointer();
+            drawMouse();
 
         }
 
